@@ -1,5 +1,5 @@
 <template>
-  <view class="file-picker flex">
+  <view class="file-picker">
     <template v-if="props.showList">
       <view class="file-picker__box" v-for="(url, index) in urls" :key="index">
         <view class="file-picker__box-content">
@@ -11,9 +11,7 @@
               mode="aspectFill"
               @click.stop="prviewImage(index)"></image>
             <video v-else class="media" :src="url" controls></video>
-            <view
-              class="icon-del-box flex items-center justify-center"
-              @click.stop="removeFile(index)">
+            <view class="icon-del-box" @click.stop="removeFile(index)">
               <text class="iconfont icon-shanchu"></text>
             </view>
           </view>
@@ -25,8 +23,7 @@
       class="file-picker__box"
       @click="chooseFile">
       <view class="file-picker__box-content">
-        <view
-          class="file-picker__box-content-body flex items-center justify-center">
+        <view class="file-picker__box-content-body">
           <slot v-if="!props.self || !urls.length">
             <text class="iconfont icon-add1"></text>
           </slot>
@@ -144,8 +141,9 @@ const chooseFile = async () => {
 }
 </script>
 
-<style lang="scss">
+<style scoped lang="scss">
 .file-picker {
+  display: flex;
   flex-wrap: wrap;
   gap: $uni-spacing-row-base;
   box-sizing: border-box;
@@ -162,6 +160,9 @@ const chooseFile = async () => {
       &-body {
         position: absolute;
         inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         .icon-add1 {
           color: $uni-text-color-grey;
           font-size: 60rpx;
@@ -175,6 +176,9 @@ const chooseFile = async () => {
           position: absolute;
           top: 0;
           right: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           height: 30rpx;
           width: 30rpx;
           color: #fff;

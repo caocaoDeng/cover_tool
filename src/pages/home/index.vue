@@ -13,7 +13,7 @@
         <form class="form inline-block">
           <view class="form-item">
             <view class="form-item-label">封面</view>
-            <view class="form-item-content">
+            <view class="form-item-content cover">
               <FilePick
                 v-model="form.cover"
                 action=""
@@ -253,6 +253,9 @@ const setFontWeight = (value: FontWeightValue) => (form.fontWeight = value)
     font-size: $uni-font-size-lg;
     font-weight: 500;
   }
+  .cover:deep(.file-picker__box) {
+    width: 60px;
+  }
   .warp {
     display: grid;
     gap: $uni-spacing-row-lg;
@@ -270,12 +273,11 @@ const setFontWeight = (value: FontWeightValue) => (form.fontWeight = value)
 .form {
   display: block;
   &-item {
-    padding: $uni-spacing-col-lg 0;
+    padding: $uni-spacing-col-base 0;
     &-label {
       height: max-content;
       font-size: $uni-font-size-base;
-      padding: $uni-spacing-col-base $uni-spacing-row-base $uni-spacing-col-base
-        0;
+      padding: $uni-spacing-col-sm $uni-spacing-row-sm $uni-spacing-col-sm 0;
     }
   }
   &.inline-block {
