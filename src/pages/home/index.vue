@@ -1,11 +1,16 @@
 <template>
   <view class="home">
-    <view class="preview" :style="cssVariable">
-      <image v-if="form.cover" :src="form.cover"></image>
-      <view class="debris">
-        <view class="debris-item" v-for="item in count"></view>
+    <view class="preview" :style="cssVariable" @click="test">
+      <view class="warp">
+        <view
+          class="debris"
+          ref="debris"
+          v-for="(item, index) in debrisInfo"
+          :key="index"
+          :style="{ ...item, backgroundImage: `url(${form.cover})` }">
+        </view>
       </view>
-      <text class="text"></text>
+      <text class="text">{{ form.text }}</text>
     </view>
     <view class="setting">
       <view class="area">
@@ -47,7 +52,12 @@
           <view class="form-item">
             <view class="form-item-label">透明度:</view>
             <view class="form-item-content">
-              <slider v-model="form.alpha" :min="0" :max="100" :step="1" />
+              <slider
+                :value="form.alpha"
+                :min="0"
+                :max="100"
+                :step="1"
+                @changing="setValue('alpha', $event)" />
             </view>
           </view>
         </form>
@@ -64,7 +74,12 @@
           <view class="form-item">
             <view class="form-item-label">透明度:</view>
             <view class="form-item-content">
-              <slider v-model="form.textAlpha" :min="0" :max="100" :step="1" />
+              <slider
+                :value="form.textAlpha"
+                :min="0"
+                :max="100"
+                :step="1"
+                @changing="setValue('textAlpha', $event)" />
             </view>
           </view>
           <view class="form-item">
@@ -81,7 +96,12 @@
           <view class="form-item">
             <view class="form-item-label">字体大小:</view>
             <view class="form-item-content">
-              <slider v-model="form.fontSize" :min="12" :max="40" :step="2" />
+              <slider
+                :value="form.fontSize"
+                :min="12"
+                :max="40"
+                :step="2"
+                @changing="setValue('fontSize', $event)" />
             </view>
           </view>
           <view class="form-item">
@@ -106,11 +126,24 @@
       </view>
     </view>
   </view>
+  <image v-for="item in cImgs" :key="item" :src="item"></image>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import html2canvas from 'html2canvas'
+import {
+  ref,
+  reactive,
+  computed,
+  watch,
+  VueElement,
+  getCurrentInstance,
+  onMounted,
+} from 'vue'
 import FilePick from '@/components/FilePick.vue'
+
+const instance = getCurrentInstance()
+const query = uni.createSelectorQuery().in(instance?.proxy)
 
 type FontFamily = (typeof fontList)[number]
 
@@ -129,6 +162,7 @@ interface FormValue {
   fontWeight: FontWeightValue
 }
 
+const cImgs = ref<string[]>([])
 const fontList = reactive<string[]>(['1', '2', '3'] as const)
 
 const fontWeight = reactive([
@@ -150,12 +184,15 @@ const fontWeight = reactive([
   },
 ] as const)
 
+const debris = ref<VueElement[]>([])
+const debrisInfo = ref<{ backgroundPosition: string }[]>([])
 const curFontIndex = ref<number>(0)
 
 const form = reactive<FormValue>({
   rows: 1,
   cols: 3,
-  cover: '',
+  cover:
+    'https://img2.baidu.com/it/u=4136404846,3323025248&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=1084',
   alpha: 100,
   text: '',
   color: '',
@@ -183,7 +220,7 @@ const cssVariable = computed(() => {
     '--cols': cols,
     '--alpha': alpha / 100,
     '--textColor': color,
-    '--textAlpha': textAlpha,
+    '--textAlpha': textAlpha / 100,
     '--fontSize': `${fontSize}px`,
     '--fontFamily': fontFamily,
     '--fontWeight': fontWeight,
@@ -198,11 +235,41 @@ watch(
   { immediate: true }
 )
 
+onMounted(() => {
+  const { rows, cols } = form
+  query
+    .select('.warp')
+    .boundingClientRect(data => {
+      const { width = 0, height = 0 } = data as UniApp.NodeInfo
+      const itemW = width / cols
+      const itemH = height / rows
+      debrisInfo.value = new Array(rows * cols).fill(0).map((_, index) => {
+        const curCol = index % cols
+        const curRow = Math.floor(index / cols)
+        return {
+          backgroundPosition: `${-itemW * curCol}px ${-itemH * curRow}px`,
+        }
+      })
+    })
+    .exec()
+})
+
 const setLayout = (type: 'rows' | 'cols', value: number) => (form[type] = value)
 
 const onFontChange = (e: any) => (curFontIndex.value = e.detail.value)
 
 const setFontWeight = (value: FontWeightValue) => (form.fontWeight = value)
+
+const setValue = (field: 'alpha' | 'textAlpha' | 'fontSize', e: any) => {
+  form[field] = e.detail.value
+}
+
+const test = async () => {
+  const result = debris.value.map(async item => await html2canvas(item.$el))
+  const canvasArr = await Promise.all(result)
+  const imgs = canvasArr.map(item => item.toDataURL())
+  cImgs.value = imgs
+}
 </script>
 
 <style scoped lang="scss">
@@ -216,29 +283,28 @@ const setFontWeight = (value: FontWeightValue) => (form.fontWeight = value)
 .preview {
   position: relative;
   height: 0;
-  padding-top: 60%;
+  padding-top: 56.25%;
   border: 1px dashed;
-  image {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: var(--alpha);
-  }
-  .debris {
+  .warp {
     position: absolute;
     inset: 0;
     display: grid;
     grid-template-rows: repeat(var(--rows), 1fr);
     grid-template-columns: repeat(var(--cols), 1fr);
+    .debris {
+      overflow: hidden;
+      opacity: var(--alpha);
+      background-position: 0 0;
+      background-size: 750rpx 421.875rpx;
+    }
   }
   .text {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    color: rgba(var(--textColor), var(--textAlpha));
+    color: var(--textColor);
+    opacity: var(--textAlpha);
     font-family: var(--fontFamily);
     font-size: var(--fontSize);
     font-weight: var(--fontWeight);
@@ -251,7 +317,7 @@ const setFontWeight = (value: FontWeightValue) => (form.fontWeight = value)
 .area {
   .name {
     font-size: $uni-font-size-lg;
-    font-weight: 500;
+    font-weight: 600;
   }
   .cover:deep(.file-picker__box) {
     width: 60px;
@@ -275,6 +341,7 @@ const setFontWeight = (value: FontWeightValue) => (form.fontWeight = value)
   &-item {
     padding: $uni-spacing-col-base 0;
     &-label {
+      width: 120rpx;
       height: max-content;
       font-size: $uni-font-size-base;
       padding: $uni-spacing-col-sm $uni-spacing-row-sm $uni-spacing-col-sm 0;
