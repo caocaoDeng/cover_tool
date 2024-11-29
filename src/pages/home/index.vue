@@ -1,6 +1,6 @@
 <template>
   <view class="home">
-    <view class="preview" :style="cssVariable" @click="test">
+    <view class="preview" :style="cssVariable" @click="slice">
       <view class="warp">
         <view
           class="debris"
@@ -14,17 +14,8 @@
     </view>
     <view class="setting">
       <view class="area">
-        <view class="name">背景</view>
+        <view class="name">封面</view>
         <form class="form inline-block">
-          <view class="form-item">
-            <view class="form-item-label">封面</view>
-            <view class="form-item-content cover">
-              <FilePick
-                v-model="form.cover"
-                action=""
-                :mediaType="['image']"></FilePick>
-            </view>
-          </view>
           <view class="form-item">
             <view class="form-item-label">行:</view>
             <view class="form-item-content warp">
@@ -50,6 +41,15 @@
             </view>
           </view>
           <view class="form-item">
+            <view class="form-item-label">图片</view>
+            <view class="form-item-content cover">
+              <FilePick
+                v-model="form.cover"
+                action=""
+                :mediaType="['image']"></FilePick>
+            </view>
+          </view>
+          <view class="form-item">
             <view class="form-item-label">透明度:</view>
             <view class="form-item-content">
               <slider
@@ -72,17 +72,6 @@
             </view>
           </view>
           <view class="form-item">
-            <view class="form-item-label">透明度:</view>
-            <view class="form-item-content">
-              <slider
-                :value="form.textAlpha"
-                :min="0"
-                :max="100"
-                :step="1"
-                @changing="setValue('textAlpha', $event)" />
-            </view>
-          </view>
-          <view class="form-item">
             <view class="form-item-label">字体:</view>
             <view class="form-item-content">
               <picker
@@ -91,6 +80,17 @@
                 @change="onFontChange">
                 <view>{{ fontList[curFontIndex] }}</view>
               </picker>
+            </view>
+          </view>
+          <view class="form-item">
+            <view class="form-item-label">阴影:</view>
+            <view class="form-item-content">
+              <slider
+                :value="form.fontSize"
+                :min="12"
+                :max="40"
+                :step="2"
+                @changing="setValue('fontSize', $event)" />
             </view>
           </view>
           <view class="form-item">
@@ -120,6 +120,17 @@
                 @click="setFontWeight(value)">
                 {{ label }}
               </view>
+            </view>
+          </view>
+          <view class="form-item">
+            <view class="form-item-label">透明度:</view>
+            <view class="form-item-content">
+              <slider
+                :value="form.textAlpha"
+                :min="0"
+                :max="100"
+                :step="1"
+                @changing="setValue('textAlpha', $event)" />
             </view>
           </view>
         </form>
@@ -202,8 +213,6 @@ const form = reactive<FormValue>({
   fontWeight: 'normal',
 })
 
-const count = computed(() => form.rows * form.cols)
-
 const cssVariable = computed(() => {
   const {
     rows,
@@ -227,6 +236,8 @@ const cssVariable = computed(() => {
   }
 })
 
+watch([() => form.rows, () => form.cols], () => computedPosition())
+
 watch(
   curFontIndex,
   (value: number) => {
@@ -235,24 +246,33 @@ watch(
   { immediate: true }
 )
 
-onMounted(() => {
-  const { rows, cols } = form
-  query
-    .select('.warp')
-    .boundingClientRect(data => {
-      const { width = 0, height = 0 } = data as UniApp.NodeInfo
-      const itemW = width / cols
-      const itemH = height / rows
-      debrisInfo.value = new Array(rows * cols).fill(0).map((_, index) => {
-        const curCol = index % cols
-        const curRow = Math.floor(index / cols)
-        return {
-          backgroundPosition: `${-itemW * curCol}px ${-itemH * curRow}px`,
-        }
+onMounted(() => computedPosition())
+
+// 获取节点信息
+const getRectInfo = (): Promise<UniApp.NodeInfo> => {
+  return new Promise(resovle => {
+    query
+      .select('.warp')
+      .boundingClientRect(data => {
+        resovle(data as UniApp.NodeInfo)
       })
-    })
-    .exec()
-})
+      .exec()
+  })
+}
+
+const computedPosition = async () => {
+  const { rows, cols } = form
+  const { width = 0, height = 0 } = await getRectInfo()
+  const itemW = width / cols
+  const itemH = height / rows
+  debrisInfo.value = new Array(rows * cols).fill(0).map((_, index) => {
+    const curCol = index % cols
+    const curRow = Math.floor(index / cols)
+    return {
+      backgroundPosition: `${-itemW * curCol}px ${-itemH * curRow}px`,
+    }
+  })
+}
 
 const setLayout = (type: 'rows' | 'cols', value: number) => (form[type] = value)
 
@@ -264,8 +284,14 @@ const setValue = (field: 'alpha' | 'textAlpha' | 'fontSize', e: any) => {
   form[field] = e.detail.value
 }
 
-const test = async () => {
-  const result = debris.value.map(async item => await html2canvas(item.$el))
+const slice = async () => {
+  const result = debris.value.map(
+    async item =>
+      await html2canvas(item.$el, {
+        scale: 3,
+        useCORS: true,
+      })
+  )
   const canvasArr = await Promise.all(result)
   const imgs = canvasArr.map(item => item.toDataURL())
   cImgs.value = imgs
