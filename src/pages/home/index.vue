@@ -78,19 +78,8 @@
                 :value="curFontIndex"
                 :range="fontList"
                 @change="onFontChange">
-                <view>{{ fontList[curFontIndex] }}</view>
+                <view>{{ form.fontFamily }}</view>
               </picker>
-            </view>
-          </view>
-          <view class="form-item">
-            <view class="form-item-label">阴影:</view>
-            <view class="form-item-content">
-              <slider
-                :value="form.fontSize"
-                :min="12"
-                :max="40"
-                :step="2"
-                @changing="setValue('fontSize', $event)" />
             </view>
           </view>
           <view class="form-item">
@@ -174,7 +163,7 @@ interface FormValue {
 }
 
 const cImgs = ref<string[]>([])
-const fontList = reactive<string[]>(['1', '2', '3'] as const)
+const fontList = reactive<string[]>(['Pen', 'Handwriting', 'Pix'] as const)
 
 const fontWeight = reactive([
   {
@@ -209,7 +198,7 @@ const form = reactive<FormValue>({
   color: '',
   textAlpha: 100,
   fontSize: 16,
-  fontFamily: '1',
+  fontFamily: 'Pen',
   fontWeight: 'normal',
 })
 
